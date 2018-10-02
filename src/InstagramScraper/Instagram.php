@@ -117,15 +117,10 @@ class Instagram
             return $rawError;
         }
         if (is_object($rawError)) {
-            $str = '';
-            foreach ($rawError as $key => $value) {
-                $str .= ' ' . $key . ' => ' . $value . ';';
-            }
-            return $str;
+			return json_encode($rawError);
         } else {
             return 'Unknown body format';
         }
-
     }
 
     /**
@@ -278,11 +273,10 @@ class Instagram
      * @throws InstagramException
      * @throws InstagramNotFoundException
      */
-    public function getMedias($username, $count = 20, $maxId = '')
+    public function getMedias($username, $count = 20, $maxId = '', &$endCursor = null)
     {
-
         $account = $this->getAccount($username);
-        return $this->getMediasByUserId($account->getId(), $count, $maxId);
+        return $this->getMediasByUserId($account->getId(), $count, $maxId, $endCursor);
     }
 
     /**
@@ -347,7 +341,7 @@ class Instagram
      * @return Media[]
      * @throws InstagramException
      */
-    public function getMediasByUserId($id, $count = 12, $maxId = '')
+    public function getMediasByUserId($id, $count = 12, $maxId = '', &$endCursor = null)
     {
         $index = 0;
         $medias = [];
@@ -372,6 +366,12 @@ class Instagram
             }
 
             $nodes = $arr['data']['user']['edge_owner_to_timeline_media']['edges'];
+			$pageInfo = $arr['data']['user']['edge_owner_to_timeline_media']['page_info'];
+			
+			if (isset($pageInfo['end_cursor'])) {
+				$endCursor = $pageInfo['end_cursor'];
+			}
+			
             // fix - count takes longer/has more overhead
             if (!isset($nodes) || empty($nodes)) {
                 return [];
