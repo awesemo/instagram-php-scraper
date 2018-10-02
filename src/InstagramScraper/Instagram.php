@@ -268,15 +268,16 @@ class Instagram
      * @param string $username
      * @param int $count
      * @param string $maxId
+	 * @param array &$pageInfo
      *
      * @return Media[]
      * @throws InstagramException
      * @throws InstagramNotFoundException
      */
-    public function getMedias($username, $count = 20, $maxId = '', &$endCursor = null)
+    public function getMedias($username, $count = 20, $maxId = '', &$pageInfo = null)
     {
         $account = $this->getAccount($username);
-        return $this->getMediasByUserId($account->getId(), $count, $maxId, $endCursor);
+        return $this->getMediasByUserId($account->getId(), $count, $maxId, $pageInfo);
     }
 
     /**
@@ -337,11 +338,12 @@ class Instagram
      * @param int $id
      * @param int $count
      * @param string $maxId
+	 * @param array &$pageInfo
      *
      * @return Media[]
      * @throws InstagramException
      */
-    public function getMediasByUserId($id, $count = 12, $maxId = '', &$endCursor = null)
+    public function getMediasByUserId($id, $count = 12, $maxId = '', &$pageInfo = null)
     {
         $index = 0;
         $medias = [];
@@ -354,7 +356,6 @@ class Instagram
             ]);
 
             $response = Request::get(Endpoints::getAccountMediasJsonLink($variables), $this->generateHeaders($this->userSession, $this->generateGisToken($variables)));
-
             if (static::HTTP_OK !== $response->code) {
                 throw new InstagramException('Response code is ' . $response->code . '. Body: ' . static::getErrorBody($response->body) . ' Something went wrong. Please report issue.', $response->code);
             }
@@ -367,10 +368,6 @@ class Instagram
 
             $nodes = $arr['data']['user']['edge_owner_to_timeline_media']['edges'];
 			$pageInfo = $arr['data']['user']['edge_owner_to_timeline_media']['page_info'];
-			
-			if (isset($pageInfo['end_cursor'])) {
-				$endCursor = $pageInfo['end_cursor'];
-			}
 			
             // fix - count takes longer/has more overhead
             if (!isset($nodes) || empty($nodes)) {
